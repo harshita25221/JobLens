@@ -42,7 +42,8 @@ const Index = () => {
       formData.append('job_description', jobDescFile);
 
       // Replace with your actual backend URL
-      const response = await fetch('http://127.0.0.1:5000/analyze', {
+      const apiUrl = import.meta.env.VITE_API_URL || 'http://127.0.0.1:5000';
+      const response = await fetch(`${apiUrl}/analyze`, {
         method: 'POST',
         body: formData,
       });
