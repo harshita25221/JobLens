@@ -12,7 +12,12 @@ import pandas as pd
 from flask_cors import CORS
 from rapidfuzz import process, fuzz  
 
-app = Flask(__name__)
+import os
+from flask import Flask, request, jsonify, send_from_directory
+from flask_cors import CORS
+from rapidfuzz import process, fuzz  
+
+app = Flask(__name__, static_folder='../frontend/dist', static_url_path='/')
 CORS(app)
 nlp = spacy.load("en_core_web_sm")
 kw_model = KeyBERT()
@@ -182,9 +187,13 @@ def generate_suggestions(resume_text, job_description, cosine_sim, missing_skill
 
 
 
-@app.route("/")
-def index():  
-    return jsonify({"status": "JobLens API is running"})
+@app.route("/", defaults={'path': ''})
+@app.route("/<path:path>")
+def serve(path):
+    if path != "" and os.path.exists(os.path.join(app.static_folder, path)):
+        return send_from_directory(app.static_folder, path)
+    else:
+        return send_from_directory(app.static_folder, 'index.html')
 
 @app.route("/analyze", methods=["POST"])  
 def analyze():  
