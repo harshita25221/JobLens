@@ -129,22 +129,41 @@ def get_skills_and_score(resume_text, job_description, alpha=0.3):
 
 
 
+import urllib.request
+import json
+
 def generate_ai_text(prompt: str) -> str:
-    if not openai.api_key:
-        return "⚠️ OpenAI API Key is missing. Please set the OPENAI_API_KEY Environment Variable in your Render Dashboard."
+    hf_token = os.getenv("HF_TOKEN")
+    if not hf_token:
+        return "⚠️ HF_TOKEN is missing. Please add your Hugging Face Access Token to the Environment Variables in your Render Dashboard."
+    
+    url = "https://api-inference.huggingface.co/models/HuggingFaceH4/zephyr-7b-beta"
+    headers = {
+        "Authorization": f"Bearer {hf_token}",
+        "Content-Type": "application/json"
+    }
+    
+    # Zephyr uses a specific prompt format
+    formatted_prompt = f"<|system|>\nYou are an expert career coach that analyzes resumes, rewrites them for better alignment, crafts cover letters, and provides actionable suggestions.\n<|user|>\n{prompt}\n<|assistant|>\n"
+    
+    payload = {
+        "inputs": formatted_prompt,
+        "parameters": {
+            "max_new_tokens": 500, 
+            "temperature": 0.7, 
+            "return_full_text": False
+        }
+    }
+    
     try:
-        response = openai.chat.completions.create(
-            model="gpt-4o-mini",
-            messages=[
-                {"role":"system","content":"You are an AI-powered career coach that analyzes resumes and job descriptions, rewrites resumes for better alignment, crafts tailored cover letters, and provides suggestions to maximize a candidate's chances of getting hired."},
-                {"role": "user", "content": prompt}
-            ], 
-            max_tokens=500,
-            temperature=0.7
-        )
-        return response.choices[0].message.content.strip()
+        req = urllib.request.Request(url, data=json.dumps(payload).encode('utf-8'), headers=headers)
+        with urllib.request.urlopen(req) as response:
+            result = json.loads(response.read().decode('utf-8'))
+            if isinstance(result, list) and len(result) > 0 and 'generated_text' in result[0]:
+                return result[0]['generated_text'].strip()
+            return "⚠️ Unexpected API response format."
     except Exception as e:
-        return f"⚠️ AI Generation Error: {str(e)}"
+        return f"⚠️ Hugging Face API Error: {str(e)}"
 
 def generate_tailored_resume(resume_text, job_description):
     prompt = f"""
