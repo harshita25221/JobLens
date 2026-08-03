@@ -129,8 +129,11 @@ def get_skills_and_score(resume_text, job_description, alpha=0.3):
 
 
 
-import urllib.request
+import requests
+from requests.adapters import HTTPAdapter
+from urllib3.util.retry import Retry
 import json
+import time
 
 def generate_ai_text(prompt: str) -> str:
     hf_token = os.getenv("HF_TOKEN")
@@ -143,7 +146,6 @@ def generate_ai_text(prompt: str) -> str:
         "Content-Type": "application/json"
     }
     
-    # Zephyr uses a specific prompt format
     formatted_prompt = f"<|system|>\nYou are an expert career coach that analyzes resumes, rewrites them for better alignment, crafts cover letters, and provides actionable suggestions.\n<|user|>\n{prompt}\n<|assistant|>\n"
     
     payload = {
@@ -155,15 +157,26 @@ def generate_ai_text(prompt: str) -> str:
         }
     }
     
-    try:
-        req = urllib.request.Request(url, data=json.dumps(payload).encode('utf-8'), headers=headers)
-        with urllib.request.urlopen(req) as response:
-            result = json.loads(response.read().decode('utf-8'))
-            if isinstance(result, list) and len(result) > 0 and 'generated_text' in result[0]:
-                return result[0]['generated_text'].strip()
-            return "⚠️ Unexpected API response format."
-    except Exception as e:
-        return f"⚠️ Hugging Face API Error: {str(e)}"
+    session = requests.Session()
+    retries = Retry(total=3, backoff_factor=1, status_forcelist=[500, 502, 503, 504])
+    session.mount('https://', HTTPAdapter(max_retries=retries))
+    
+    for attempt in range(3):
+        try:
+            response = session.post(url, headers=headers, json=payload, timeout=30)
+            if response.status_code == 200:
+                result = response.json()
+                if isinstance(result, list) and len(result) > 0 and 'generated_text' in result[0]:
+                    return result[0]['generated_text'].strip()
+                return "⚠️ Unexpected API response format."
+            else:
+                # If it's a rate limit or other error, try again or return
+                if attempt == 2:
+                    return f"⚠️ API Error ({response.status_code}): {response.text}"
+        except Exception as e:
+            if attempt == 2:
+                return f"⚠️ Hugging Face API Connection Error: {str(e)}"
+        time.sleep(2) # brief pause before retry
 
 def generate_tailored_resume(resume_text, job_description):
     prompt = f"""
