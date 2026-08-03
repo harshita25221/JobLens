@@ -8,22 +8,26 @@ RUN apt-get update && apt-get install -y \
     && apt-get install -y nodejs \
     && rm -rf /var/lib/apt/lists/*
 
-# Set the working directory
-WORKDIR /app
+# Set up a new user named "user" with user ID 1000
+# HuggingFace requires apps to run as a non-root user for security
+RUN useradd -m -u 1000 user
+USER user
+ENV HOME=/home/user \
+    PATH=/home/user/.local/bin:$PATH
 
-# Copy the entire project into the container
-COPY . /app
+WORKDIR $HOME/app
+
+# Copy the entire project into the container and change ownership to our new user
+COPY --chown=user . $HOME/app
 
 # 1. Build the Frontend
 RUN cd frontend && npm install && npm run build
 
 # 2. Install Backend Dependencies
-# (We install gunicorn explicitly just in case)
 RUN cd backend && pip install --no-cache-dir -r requirements.txt gunicorn
 
 # 3. Cache the ML Models
-# This downloads the KeyBERT model during the Docker build so it starts instantly
-ENV HF_HOME=/app/backend/.hf_cache
+ENV HF_HOME=$HOME/app/backend/.hf_cache
 RUN python -c "from keybert import KeyBERT; KeyBERT()"
 
 # HuggingFace Spaces require the app to run on port 7860
