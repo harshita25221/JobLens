@@ -130,16 +130,21 @@ def get_skills_and_score(resume_text, job_description, alpha=0.3):
 
 
 def generate_ai_text(prompt: str) -> str:
-    response = openai.chat.completions.create(
-        model="gpt-4o-mini",
-        messages=[
-            {"role":"system","content":"You are an AI-powered career coach that analyzes resumes and job descriptions, rewrites resumes for better alignment, crafts tailored cover letters, and provides suggestions to maximize a candidate's chances of getting hired."},
-            {"role": "user", "content": prompt}
-        ], 
-        max_tokens=500,
-        temperature=0.7
-    )
-    return response.choices[0].message.content.strip()
+    if not openai.api_key:
+        return "⚠️ OpenAI API Key is missing. Please set the OPENAI_API_KEY Environment Variable in your Render Dashboard."
+    try:
+        response = openai.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[
+                {"role":"system","content":"You are an AI-powered career coach that analyzes resumes and job descriptions, rewrites resumes for better alignment, crafts tailored cover letters, and provides suggestions to maximize a candidate's chances of getting hired."},
+                {"role": "user", "content": prompt}
+            ], 
+            max_tokens=500,
+            temperature=0.7
+        )
+        return response.choices[0].message.content.strip()
+    except Exception as e:
+        return f"⚠️ AI Generation Error: {str(e)}"
 
 def generate_tailored_resume(resume_text, job_description):
     prompt = f"""
