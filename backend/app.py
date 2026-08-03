@@ -4,7 +4,7 @@ import pdfplumber
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 import re
-from keybert import KeyBERT
+import yake
 from io import BytesIO
 from flask import Flask, request, jsonify, render_template
 from spacy.lang.en.stop_words import STOP_WORDS
@@ -20,7 +20,6 @@ from rapidfuzz import process, fuzz
 app = Flask(__name__, static_folder='../frontend/dist', static_url_path='/')
 CORS(app)
 nlp = spacy.load("en_core_web_sm")
-kw_model = KeyBERT()
 
 import openai
 import os
@@ -52,11 +51,8 @@ def clean_text(text):
 
 
 def get_keywords(text, num_keywords=20):
-    keywords = kw_model.extract_keywords(
-        text, keyphrase_ngram_range=(1, 3), 
-        stop_words='english',
-        top_n=num_keywords
-    )
+    kw_extractor = yake.KeywordExtractor(lan="en", n=3, dedupLim=0.9, top=num_keywords, features=None)
+    keywords = kw_extractor.extract_keywords(text)
     return [kw[0] for kw in keywords]
 
 def extract_spacy_skills(text):

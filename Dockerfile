@@ -26,9 +26,6 @@ RUN cd frontend && npm install && npm run build
 # 2. Install Backend Dependencies
 RUN cd backend && pip install --no-cache-dir -r requirements.txt gunicorn
 
-# 3. Cache the ML Models
-ENV HF_HOME=$HOME/app/backend/.hf_cache
-RUN python -c "from keybert import KeyBERT; KeyBERT()"
 
 # HuggingFace Spaces require the app to run on port 7860
 ENV PORT=7860
