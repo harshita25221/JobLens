@@ -1,3 +1,4 @@
+import streamlit as st
 import docx
 import spacy 
 import pdfplumber
@@ -6,32 +7,30 @@ from sklearn.metrics.pairwise import cosine_similarity
 import re
 from keybert import KeyBERT
 from io import BytesIO
-from flask import Flask, request, jsonify, render_template
 from spacy.lang.en.stop_words import STOP_WORDS
 import pandas as pd
-from flask_cors import CORS
-from rapidfuzz import process, fuzz  
-
-import os
-from flask import Flask, request, jsonify, send_from_directory
-from flask_cors import CORS
-from rapidfuzz import process, fuzz  
-
-app = Flask(__name__, static_folder='../frontend/dist', static_url_path='/')
-CORS(app)
-nlp = spacy.load("en_core_web_sm")
-kw_model = KeyBERT()
-
+from rapidfuzz import process, fuzz
 import openai
 import os
+
+# Set page configuration
+st.set_page_config(page_title="JobLens", page_icon="🚀", layout="wide")
+
+# Load models and data (cached to prevent reloading on every interaction)
+@st.cache_resource
+def load_models():
+    nlp = spacy.load("en_core_web_sm")
+    kw_model = KeyBERT()
+    skills_df = pd.read_csv("merged_skills.csv")
+    global_skills = set(skills_df["skill"].dropna().str.lower().str.strip())
+    return nlp, kw_model, global_skills
+
+with st.spinner("Loading AI Models..."):
+    nlp, kw_model, GLOBAL_SKILLS = load_models()
+
 openai.api_key = os.getenv("OPENAI_API_KEY")
 
-
-skills_df = pd.read_csv("merged_skills.csv")
-GLOBAL_SKILLS = set(skills_df["skill"].dropna().str.lower().str.strip())
-
-
-
+# ----------------- ML Functions -----------------
 def extract_text_from_docx(file):
     doc = docx.Document(file)
     return "\n".join([para.text for para in doc.paragraphs])
@@ -48,8 +47,6 @@ def clean_text(text):
     text = text.lower()
     text = re.sub(r"\s+"," ", text)
     return text
-
-
 
 def get_keywords(text, num_keywords=20):
     keywords = kw_model.extract_keywords(
@@ -74,7 +71,6 @@ def extract_spacy_skills(text):
     return list(skills)
 
 def normalize_skills_with_fuzzy(extracted_skills, global_skills, threshold=85):
-    """ ✅ Use rapidfuzz to map extracted skills to closest taxonomy skills """
     normalized = set()
     for skill in extracted_skills:
         match = process.extractOne(skill, global_skills, scorer=fuzz.token_sort_ratio)
@@ -89,23 +85,14 @@ def extract_multiword_skills(text, global_skills):
             found.add(skill)
     return found
 
-
-
 def get_combined_skills(text):
     kw_skills = set(get_keywords(text))
     spacy_skills = set(extract_spacy_skills(text))
     multiword_skills = extract_multiword_skills(text, GLOBAL_SKILLS)
-
     all_extracted = {s.lower().strip() for s in kw_skills.union(spacy_skills, multiword_skills)}
-
-   
     filtered = normalize_skills_with_fuzzy(all_extracted, GLOBAL_SKILLS)
-
     return filtered
 
-
-
-# -------------------- Scoring --------------------
 def get_skills_and_score(resume_text, job_description, alpha=0.3):
     resume_skills = set(get_combined_skills(resume_text))
     job_req_skills = set(get_combined_skills(job_description))
@@ -123,7 +110,6 @@ def get_skills_and_score(resume_text, job_description, alpha=0.3):
         [" ".join(resume_skills), " ".join(job_req_skills)]
     )
     cosine_sim = cosine_similarity(tfidf_matrix[0:1], tfidf_matrix[1:2])[0][0]
-
     final_score = (alpha * cosine_sim + (1 - alpha) * overlap) * 100
 
     missing_skills = sorted(list(job_req_skills - resume_skills))
@@ -131,19 +117,22 @@ def get_skills_and_score(resume_text, job_description, alpha=0.3):
 
     return final_score, missing_skills, highlighted_skills, cosine_sim
 
-
-
 def generate_ai_text(prompt: str) -> str:
-    response = openai.chat.completions.create(
-        model="gpt-4o-mini",
-        messages=[
-            {"role":"system","content":"You are an AI-powered career coach that analyzes resumes and job descriptions, rewrites resumes for better alignment, crafts tailored cover letters, and provides suggestions to maximize a candidate's chances of getting hired."},
-            {"role": "user", "content": prompt}
-        ], 
-        max_tokens=500,
-        temperature=0.7
-    )
-    return response.choices[0].message.content.strip()
+    if not openai.api_key:
+        return "⚠️ OpenAI API Key is missing. Please set the OPENAI_API_KEY environment variable."
+    try:
+        response = openai.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[
+                {"role":"system","content":"You are an AI-powered career coach that analyzes resumes and job descriptions, rewrites resumes for better alignment, crafts tailored cover letters, and provides suggestions to maximize a candidate's chances of getting hired."},
+                {"role": "user", "content": prompt}
+            ], 
+            max_tokens=500,
+            temperature=0.7
+        )
+        return response.choices[0].message.content.strip()
+    except Exception as e:
+        return f"Error generating text: {str(e)}"
 
 def generate_tailored_resume(resume_text, job_description):
     prompt = f"""
@@ -161,8 +150,6 @@ def generate_cover_letter(resume_text, job_description):
     Make it concise, skill-focused, and role-specific."""
     return generate_ai_text(prompt)
 
-import re 
-
 def generate_suggestions(resume_text, job_description, cosine_sim, missing_skills):
     prompt = f"""
     You are an expert career coach. 
@@ -173,67 +160,97 @@ def generate_suggestions(resume_text, job_description, cosine_sim, missing_skill
     Provide a numbered list of 3-5 clear, practical suggestions.
     Each suggestion must be on a new line.
     """
-    
     response_text = generate_ai_text(prompt)
-    
-    
+    if response_text.startswith("⚠️") or response_text.startswith("Error"):
+        return [response_text]
+        
     suggestions_list = [
         re.sub(r'^\d+\.\s*', '', line).strip() 
         for line in response_text.split('\n') 
         if line.strip()
     ]
-    
     return suggestions_list
 
+# ----------------- UI -----------------
+st.title("🚀 JobLens")
+st.markdown("### AI-Powered Resume Analyzer")
+st.markdown("Upload your resume and the job description to get a tailored analysis, cover letter, and resume rewrite.")
 
+col1, col2 = st.columns(2)
 
-@app.route("/", defaults={'path': ''})
-@app.route("/<path:path>")
-def serve(path):
-    if path != "" and os.path.exists(os.path.join(app.static_folder, path)):
-        return send_from_directory(app.static_folder, path)
-    else:
-        return send_from_directory(app.static_folder, 'index.html')
+with col1:
+    st.subheader("📄 Upload Resume")
+    resume_file = st.file_uploader("Choose a PDF or DOCX file", type=["pdf", "docx"], key="resume")
 
-@app.route("/analyze", methods=["POST"])  
-def analyze():  
-    resume_file = request.files.get("resume")  
-    jd_file = request.files.get("job_description")
+with col2:
+    st.subheader("💼 Upload Job Description")
+    jd_file = st.file_uploader("Choose a PDF or DOCX file", type=["pdf", "docx"], key="jd")
+
+if st.button("Analyze Resume", type="primary"):
     if not resume_file or not jd_file:
-        return jsonify({"error": "Please upload both resume and job description files."})  
-
-    if resume_file.filename.endswith(".docx"):
-        resume_raw = extract_text_from_docx(resume_file)
-    elif resume_file.filename.endswith(".pdf"):
-        resume_raw = extract_text_from_pdf(resume_file)
+        st.warning("Please upload both a resume and a job description.")
     else:
-        return jsonify({"error": "Unsupported resume file format."})  
+        with st.spinner("Analyzing and generating insights (this may take a minute)..."):
+            # Extract text
+            if resume_file.name.endswith(".docx"):
+                resume_raw = extract_text_from_docx(resume_file)
+            else:
+                resume_raw = extract_text_from_pdf(resume_file)
+                
+            if jd_file.name.endswith(".docx"):
+                jd_raw = extract_text_from_docx(jd_file)
+            else:
+                jd_raw = extract_text_from_pdf(jd_file)
+                
+            resume_clean = clean_text(resume_raw)
+            jd_clean = clean_text(jd_raw)
 
-    if jd_file.filename.endswith(".docx"):
-        jd_raw = extract_text_from_docx(jd_file)
-    elif jd_file.filename.endswith(".pdf"):
-        jd_raw = extract_text_from_pdf(jd_file)
-    else:
-        return jsonify({"error": "Unsupported job description file format."})  
+            # Analyze
+            final_score, missing_skills, highlighted_skills, cosine_sim = get_skills_and_score(resume_clean, jd_clean)
+            
+            # Generate OpenAI content
+            tailored_resume = generate_tailored_resume(resume_clean, jd_clean)
+            cover_letter = generate_cover_letter(resume_clean, jd_clean)
+            suggestions = generate_suggestions(resume_clean, jd_clean, cosine_sim, missing_skills)
 
-    resume_clean = clean_text(resume_raw)
-    jd_clean = clean_text(jd_raw)
+        # Display Results
+        st.divider()
+        st.header("📊 Analysis Results")
+        
+        score_col, empty_col = st.columns([1, 2])
+        with score_col:
+            st.metric(label="Match Score", value=f"{round(final_score, 1)}%")
+            st.progress(min(final_score / 100.0, 1.0))
 
-    final_score, missing_skills, highlighted_skills, cosine_sim = get_skills_and_score(resume_clean, jd_clean)
+        st.subheader("🎯 Skills Analysis")
+        skill_col1, skill_col2 = st.columns(2)
+        
+        with skill_col1:
+            st.markdown("**✅ Highlighted Skills**")
+            if highlighted_skills:
+                for skill in highlighted_skills:
+                    st.markdown(f"- {skill.title()}")
+            else:
+                st.write("None found.")
+                
+        with skill_col2:
+            st.markdown("**⚠️ Missing Skills**")
+            if missing_skills:
+                for skill in missing_skills:
+                    st.markdown(f"- {skill.title()}")
+            else:
+                st.write("None missing!")
 
-    tailored_resume = generate_tailored_resume(resume_clean, jd_clean)
-    cover_letter = generate_cover_letter(resume_clean, jd_clean)
-    suggestions = generate_suggestions(resume_clean, jd_clean, cosine_sim, missing_skills)
-
-    return jsonify({  
-        "match_score": round(final_score,2),
-        "missing_skills": missing_skills,
-        "highlighted_skills": highlighted_skills,
-        "tailored_resume": tailored_resume,
-        "cover_letter": cover_letter,
-        "suggestions": suggestions
-    })
-
-if __name__ == "__main__":
-    port = int(os.environ.get('PORT', 5000))
-    app.run(host='0.0.0.0', port=port)
+        st.divider()
+        
+        tab1, tab2, tab3 = st.tabs(["📝 Tailored Resume", "✉️ Cover Letter", "💡 Suggestions"])
+        
+        with tab1:
+            st.markdown(tailored_resume)
+            
+        with tab2:
+            st.markdown(cover_letter)
+            
+        with tab3:
+            for i, suggestion in enumerate(suggestions, 1):
+                st.markdown(f"{i}. {suggestion}")

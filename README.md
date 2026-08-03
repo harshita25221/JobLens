@@ -3,8 +3,8 @@ title: JobLens
 emoji: 🚀
 colorFrom: blue
 colorTo: indigo
-sdk: docker
-app_port: 7860
+sdk: streamlit
+app_file: streamlit_app.py
 pinned: false
 ---
 

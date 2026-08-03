@@ -1,0 +1,9 @@
+streamlit
+spacy
+pdfplumber
+scikit-learn
+keybert
+openai
+pandas
+rapidfuzz
+python-docx
