@@ -129,23 +129,36 @@ def get_skills_and_score(resume_text, job_description, alpha=0.3):
 
 
 
-import google.generativeai as genai
+import requests
+import json
 
 def generate_ai_text(prompt: str) -> str:
     gemini_key = os.getenv("GEMINI_API_KEY")
     if not gemini_key:
         return "⚠️ GEMINI_API_KEY is missing. Please add your free Gemini API Key to the Environment Variables in your Render Dashboard."
     
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={gemini_key}"
+    headers = {'Content-Type': 'application/json'}
+    
+    full_prompt = "You are an expert career coach that analyzes resumes, rewrites them for better alignment, crafts cover letters, and provides actionable suggestions.\n\n" + prompt
+    
+    payload = {
+        "contents": [{
+            "parts":[{"text": full_prompt}]
+        }]
+    }
+    
     try:
-        genai.configure(api_key=gemini_key)
-        model = genai.GenerativeModel('gemini-pro')
-        
-        full_prompt = "You are an expert career coach that analyzes resumes, rewrites them for better alignment, crafts cover letters, and provides actionable suggestions.\n\n" + prompt
-        
-        response = model.generate_content(full_prompt)
-        return response.text.strip()
+        response = requests.post(url, headers=headers, json=payload, timeout=30)
+        if response.status_code == 200:
+            data = response.json()
+            if 'candidates' in data and len(data['candidates']) > 0:
+                return data['candidates'][0]['content']['parts'][0]['text'].strip()
+            return "⚠️ Unexpected response format from Gemini."
+        else:
+            return f"⚠️ Gemini API Error ({response.status_code}): {response.text}"
     except Exception as e:
-        return f"⚠️ Gemini API Connection Error: {str(e)}"
+        return f"⚠️ Gemini Connection Error: {str(e)}"
 
 def generate_tailored_resume(resume_text, job_description):
     prompt = f"""
