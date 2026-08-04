@@ -1,14 +1,4 @@
----
-title: JobLens
-emoji: 🚀
-colorFrom: blue
-colorTo: indigo
-sdk: docker
-app_port: 7860
-pinned: false
----
-
-# 🚀 JobLens: AI-Powered Resume Analyzer
+🚀 JobLens: AI-Powered Resume Analyzer
 
 [![Live Demo](https://img.shields.io/badge/Live_Demo-View_Website-indigo?style=for-the-badge&logo=render)](https://joblens-1-uim8.onrender.com)
 [![Tech Stack](https://img.shields.io/badge/Tech_Stack-React_|_Flask_|_Python_|_AI-blue?style=for-the-badge)](#)
@@ -17,53 +7,53 @@ Welcome to **JobLens**, an intelligent and visually stunning web application des
 
 ---
 
-## 🔗 Live Website
+🔗 Live Website
 Experience the live application here: **[https://joblens-1-uim8.onrender.com](https://joblens-1-uim8.onrender.com)**
 
 ---
 
-## ✨ Key Features
+✨ Key Features
 
-* **🔍 Smart Skill Extraction**: Utilizes SpaCy, YAKE, and RapidFuzz to precisely extract and normalize skills from both resumes and job descriptions.
-* **📊 Match Scoring algorithm**: Calculates a dynamic compatibility score using TF-IDF and Cosine Similarity, providing a realistic assessment of your fit.
-* **🎯 Tailored AI Suggestions**: Powered by the highly reliable **Groq API**, JobLens gives you 3-5 personalized, actionable steps to improve your resume instantly.
-* **📝 Automated Cover Letter Generation**: Instantly drafts a professional, role-specific cover letter using the alignment between your resume and the job description.
-* **📄 Automated Resume Rewriting**: Generates an optimized, highly-tailored version of your resume content that seamlessly aligns with the target role.
-* **🎨 Premium UI/UX**: Built with React, Tailwind CSS, Framer Motion, and modern glassmorphic design principles to provide an immersive, fluid user experience.
-
----
-
-## 🛠️ Technology Stack
-
-### Frontend
-* **React 18** (Vite)
-* **TypeScript**
-* **Tailwind CSS**
-* **Framer Motion** (Micro-animations)
-* **Lucide React** (Icons)
-* **Recharts** (Data Visualization)
-
-### Backend
-* **Python 3.10+** (Flask)
-* **SpaCy** & **YAKE** (NLP Skill Extraction)
-* **Scikit-Learn** (TF-IDF & Cosine Similarity)
-* **RapidFuzz** (Fuzzy String Matching)
-* **Groq API** (Llama-3.1 for Generative AI Text)
-* **PDFPlumber** & **Python-Docx** (Document Parsing)
+* 🔍 Smart Skill Extraction**: Utilizes SpaCy, YAKE, and RapidFuzz to precisely extract and normalize skills from both resumes and job descriptions.
+* 📊 Match Scoring algorithm**: Calculates a dynamic compatibility score using TF-IDF and Cosine Similarity, providing a realistic assessment of your fit.
+* 🎯 Tailored AI Suggestions**: Powered by the highly reliable **Groq API**, JobLens gives you 3-5 personalized, actionable steps to improve your resume instantly.
+* 📝 Automated Cover Letter Generation**: Instantly drafts a professional, role-specific cover letter using the alignment between your resume and the job description.
+* 📄 Automated Resume Rewriting**: Generates an optimized, highly-tailored version of your resume content that seamlessly aligns with the target role.
+* 🎨 Premium UI/UX**: Built with React, Tailwind CSS, Framer Motion, and modern glassmorphic design principles to provide an immersive, fluid user experience.
 
 ---
 
-## 🚀 How to Run Locally
+🛠️ Technology Stack
+
+ Frontend
+* React 18 (Vite)
+* TypeScript
+* Tailwind CSS
+* Framer Motion (Micro-animations)
+* Lucide React (Icons)
+* Recharts (Data Visualization)
+
+ Backend
+* Python 3.10+ (Flask)
+* SpaCy & YAKE (NLP Skill Extraction)
+* Scikit-Learn (TF-IDF & Cosine Similarity)
+* RapidFuzz (Fuzzy String Matching)
+* Groq API (Llama-3.1 for Generative AI Text)
+* PDFPlumber & Python-Docx (Document Parsing)
+
+---
+
+ 🚀 How to Run Locally
 
 If you'd like to run JobLens on your local machine, follow these steps:
 
-### 1. Clone the Repository
+ 1. Clone the Repository
 ```bash
 git clone https://github.com/harshita25221/JobLens.git
 cd JobLens
 ```
 
-### 2. Set up the Backend
+ 2. Set up the Backend
 ```bash
 # Create a virtual environment
 python -m venv venv
@@ -80,7 +70,7 @@ export GROQ_API_KEY="your_groq_api_key_here"
 python backend/app.py
 ```
 
-### 3. Set up the Frontend
+ 3. Set up the Frontend
 In a new terminal window:
 ```bash
 cd frontend
@@ -95,7 +85,7 @@ Navigate to `http://localhost:8080` to view the frontend!
 
 ---
 
-## 🤝 Contributing
+ 🤝 Contributing
 Contributions are always welcome! Feel free to open an issue or submit a pull request if you have ideas for new features or improvements.
 
 ---
