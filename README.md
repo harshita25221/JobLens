@@ -48,7 +48,7 @@ If you'd like to run JobLens on your local machine, follow these steps:
 
  1. Clone the Repository
 ```bash
-git clone https://github.com/harshita25221/JobLens.git
+git clone [your repository link]
 cd JobLens
 ```
 
