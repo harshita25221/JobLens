@@ -130,35 +130,51 @@ def get_skills_and_score(resume_text, job_description, alpha=0.3):
 
 
 import requests
-import json
+from requests.adapters import HTTPAdapter
+from urllib3.util.retry import Retry
+import time
 
 def generate_ai_text(prompt: str) -> str:
-    gemini_key = os.getenv("GEMINI_API_KEY")
-    if not gemini_key:
-        return "⚠️ GEMINI_API_KEY is missing. Please add your free Gemini API Key to the Environment Variables in your Render Dashboard."
+    hf_token = os.getenv("HF_TOKEN")
+    if not hf_token:
+        return "⚠️ HF_TOKEN is missing. Please add your Hugging Face Token back to Render Environment Variables."
     
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key={gemini_key}"
-    headers = {'Content-Type': 'application/json'}
-    
-    full_prompt = "You are an expert career coach that analyzes resumes, rewrites them for better alignment, crafts cover letters, and provides actionable suggestions.\n\n" + prompt
-    
-    payload = {
-        "contents": [{
-            "parts":[{"text": full_prompt}]
-        }]
+    url = "https://router.huggingface.co/hf-inference/models/HuggingFaceH4/zephyr-7b-beta"
+    headers = {
+        "Authorization": f"Bearer {hf_token}",
+        "Content-Type": "application/json"
     }
     
-    try:
-        response = requests.post(url, headers=headers, json=payload, timeout=30)
-        if response.status_code == 200:
-            data = response.json()
-            if 'candidates' in data and len(data['candidates']) > 0:
-                return data['candidates'][0]['content']['parts'][0]['text'].strip()
-            return "⚠️ Unexpected response format from Gemini."
-        else:
-            return f"⚠️ Gemini API Error ({response.status_code}): {response.text}"
-    except Exception as e:
-        return f"⚠️ Gemini Connection Error: {str(e)}"
+    formatted_prompt = f"<|system|>\nYou are an expert career coach that analyzes resumes, rewrites them for better alignment, crafts cover letters, and provides actionable suggestions.\n<|user|>\n{prompt}\n<|assistant|>\n"
+    
+    payload = {
+        "inputs": formatted_prompt,
+        "parameters": {
+            "max_new_tokens": 500, 
+            "temperature": 0.7, 
+            "return_full_text": False
+        }
+    }
+    
+    session = requests.Session()
+    retries = Retry(total=3, backoff_factor=1, status_forcelist=[500, 502, 503, 504])
+    session.mount('https://', HTTPAdapter(max_retries=retries))
+    
+    for attempt in range(3):
+        try:
+            response = session.post(url, headers=headers, json=payload, timeout=30)
+            if response.status_code == 200:
+                result = response.json()
+                if isinstance(result, list) and len(result) > 0 and 'generated_text' in result[0]:
+                    return result[0]['generated_text'].strip()
+                return "⚠️ Unexpected API response format."
+            else:
+                if attempt == 2:
+                    return f"⚠️ Hugging Face API Error ({response.status_code}): {response.text}"
+        except Exception as e:
+            if attempt == 2:
+                return f"⚠️ API Connection Error: {str(e)}"
+        time.sleep(2)
 
 def generate_tailored_resume(resume_text, job_description):
     prompt = f"""
