@@ -127,13 +127,18 @@ from urllib3.util.retry import Retry
 import time
 
 def generate_ai_text(prompt: str) -> str:
-    url = "https://text.pollinations.ai/openai"
+    groq_api_key = os.getenv("GROQ_API_KEY")
+    if not groq_api_key:
+        return "⚠️ GROQ_API_KEY is missing. Please add your free Groq API Key to Render Environment Variables."
+
+    url = "https://api.groq.com/openai/v1/chat/completions"
     headers = {
         "Content-Type": "application/json",
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"
+        "Authorization": f"Bearer {groq_api_key}"
     }
     
     payload = {
+        "model": "llama-3.1-8b-instant",
         "messages": [
             {"role": "system", "content": "You are an expert career coach that analyzes resumes, rewrites them for better alignment, crafts cover letters, and provides actionable suggestions."},
             {"role": "user", "content": prompt}
