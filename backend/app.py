@@ -6,24 +6,16 @@ from sklearn.metrics.pairwise import cosine_similarity
 import re
 import yake
 from io import BytesIO
-from flask import Flask, request, jsonify, render_template
+from flask import Flask, request, jsonify, render_template, send_from_directory
 from spacy.lang.en.stop_words import STOP_WORDS
 import pandas as pd
 from flask_cors import CORS
 from rapidfuzz import process, fuzz  
-
 import os
-from flask import Flask, request, jsonify, send_from_directory
-from flask_cors import CORS
-from rapidfuzz import process, fuzz  
 
 app = Flask(__name__, static_folder='../frontend/dist', static_url_path='/')
 CORS(app)
 nlp = spacy.load("en_core_web_sm")
-
-import openai
-import os
-openai.api_key = os.getenv("OPENAI_API_KEY")
 
 
 skills_df = pd.read_csv("merged_skills.csv")
