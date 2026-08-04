@@ -138,7 +138,7 @@ def generate_ai_text(prompt: str) -> str:
     
     try:
         genai.configure(api_key=gemini_key)
-        model = genai.GenerativeModel('gemini-1.5-flash')
+        model = genai.GenerativeModel('gemini-pro')
         
         full_prompt = "You are an expert career coach that analyzes resumes, rewrites them for better alignment, crafts cover letters, and provides actionable suggestions.\n\n" + prompt
         
