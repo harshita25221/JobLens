@@ -137,7 +137,7 @@ def generate_ai_text(prompt: str) -> str:
     if not gemini_key:
         return "⚠️ GEMINI_API_KEY is missing. Please add your free Gemini API Key to the Environment Variables in your Render Dashboard."
     
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={gemini_key}"
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key={gemini_key}"
     headers = {'Content-Type': 'application/json'}
     
     full_prompt = "You are an expert career coach that analyzes resumes, rewrites them for better alignment, crafts cover letters, and provides actionable suggestions.\n\n" + prompt
