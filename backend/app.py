@@ -137,7 +137,8 @@ import time
 def generate_ai_text(prompt: str) -> str:
     url = "https://text.pollinations.ai/openai"
     headers = {
-        "Content-Type": "application/json"
+        "Content-Type": "application/json",
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"
     }
     
     payload = {
