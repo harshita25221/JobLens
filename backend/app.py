@@ -139,7 +139,7 @@ def generate_ai_text(prompt: str) -> str:
     if not hf_token:
         return "⚠️ HF_TOKEN is missing. Please add your Hugging Face Token back to Render Environment Variables."
     
-    url = "https://router.huggingface.co/hf-inference/models/HuggingFaceH4/zephyr-7b-beta"
+    url = "https://router.huggingface.co/hf-inference/models/mistralai/Mistral-7B-Instruct-v0.3"
     headers = {
         "Authorization": f"Bearer {hf_token}",
         "Content-Type": "application/json"
