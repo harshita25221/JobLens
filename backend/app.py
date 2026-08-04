@@ -135,25 +135,17 @@ from urllib3.util.retry import Retry
 import time
 
 def generate_ai_text(prompt: str) -> str:
-    hf_token = os.getenv("HF_TOKEN")
-    if not hf_token:
-        return "⚠️ HF_TOKEN is missing. Please add your Hugging Face Token back to Render Environment Variables."
-    
-    url = "https://router.huggingface.co/hf-inference/models/mistralai/Mistral-7B-Instruct-v0.3"
+    url = "https://text.pollinations.ai/openai"
     headers = {
-        "Authorization": f"Bearer {hf_token}",
         "Content-Type": "application/json"
     }
     
-    formatted_prompt = f"<|system|>\nYou are an expert career coach that analyzes resumes, rewrites them for better alignment, crafts cover letters, and provides actionable suggestions.\n<|user|>\n{prompt}\n<|assistant|>\n"
-    
     payload = {
-        "inputs": formatted_prompt,
-        "parameters": {
-            "max_new_tokens": 500, 
-            "temperature": 0.7, 
-            "return_full_text": False
-        }
+        "messages": [
+            {"role": "system", "content": "You are an expert career coach that analyzes resumes, rewrites them for better alignment, crafts cover letters, and provides actionable suggestions."},
+            {"role": "user", "content": prompt}
+        ],
+        "temperature": 0.7
     }
     
     session = requests.Session()
@@ -165,12 +157,12 @@ def generate_ai_text(prompt: str) -> str:
             response = session.post(url, headers=headers, json=payload, timeout=30)
             if response.status_code == 200:
                 result = response.json()
-                if isinstance(result, list) and len(result) > 0 and 'generated_text' in result[0]:
-                    return result[0]['generated_text'].strip()
+                if 'choices' in result and len(result['choices']) > 0:
+                    return result['choices'][0]['message']['content'].strip()
                 return "⚠️ Unexpected API response format."
             else:
                 if attempt == 2:
-                    return f"⚠️ Hugging Face API Error ({response.status_code}): {response.text}"
+                    return f"⚠️ API Error ({response.status_code}): {response.text}"
         except Exception as e:
             if attempt == 2:
                 return f"⚠️ API Connection Error: {str(e)}"
