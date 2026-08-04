@@ -7,7 +7,7 @@ Welcome to JobLens, an intelligent and visually stunning web application designe
 ---
 
 🔗 Live Website
-Experience the live application here: [https://joblens-1-uim8.onrender.com](https://joblens-1-uim8.onrender.com]
+Experience the live application here: [https://joblens-1-uim8.onrender.com]
 
 ---
 
